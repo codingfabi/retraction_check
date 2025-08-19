@@ -15,19 +15,46 @@ class BibEntry(TypedDict, total=False):
     journal: str
     year: str
     doi: str
-    # Add more fields as needed
 
 def parse_bib_file(bib_path: str) -> List[BibEntry]:
-    with open(bib_path, 'r') as bibtex_file:
-        bib_database = bibtexparser.load(bibtex_file)
-    return bib_database.entries
+    try:
+        with open(bib_path, 'r', encoding='utf-8') as bibtex_file:
+            bib_database = bibtexparser.load(bibtex_file)
+        if not bib_database.entries:
+            print(f"Error: The .bib file '{bib_path}' is empty or contains no valid entries.")
+            return []
+        return bib_database.entries  # type: ignore[return-value]
+    except FileNotFoundError:
+        print(f"Error: The .bib file '{bib_path}' was not found.")
+        return []
+    except UnicodeDecodeError:
+        print(f"Error: The .bib file '{bib_path}' could not be decoded with utf-8.")
+        return []
+    except Exception as e:
+        print(f"Error parsing .bib file '{bib_path}': {e}")
+        return []
 
 def download_retraction_watch_csv() -> list:
-    response = requests.get(RETRACTION_WATCH_CSV)
-    response.raise_for_status()
-    csvfile = io.StringIO(response.text)
-    reader = csv.DictReader(csvfile)
-    return list(reader)
+    try:
+        response = requests.get(RETRACTION_WATCH_CSV)
+        response.raise_for_status()
+        csvfile = io.StringIO(response.text)
+        reader = csv.DictReader(csvfile)
+        rows = list(reader)
+        # Check for required columns
+        if not rows or 'Title' not in reader.fieldnames or 'OriginalPaperDOI' not in reader.fieldnames:
+            print("Error: Retraction Watch CSV is missing required columns or is corrupted.")
+            return []
+        return rows
+    except requests.RequestException as e:
+        print(f"Error: Could not fetch Retraction Watch CSV file. Connectivity issue or URL unreachable. Details: {e}")
+        return []
+    except UnicodeDecodeError:
+        print("Error: The Retraction Watch CSV file could not be decoded with utf-8.")
+        return []
+    except Exception as e:
+        print(f"Error reading Retraction Watch CSV: {e}")
+        return []
 
 def build_retraction_lookup(csv_rows):
     titles = set()
