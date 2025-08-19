@@ -4,12 +4,20 @@ import sys
 import csv
 import io
 import difflib
-from typing import List, Dict, Literal
+from typing import List, Literal, TypedDict, Set, Optional
 
 RETRACTION_WATCH_CSV = "https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv"
 MATCH_TYPE = Literal['doi', 'fuzzy']
 
-def parse_bib_file(bib_path: str) -> List[Dict]:
+class BibEntry(TypedDict, total=False):
+    title: str
+    author: str
+    journal: str
+    year: str
+    doi: str
+    # Add more fields as needed
+
+def parse_bib_file(bib_path: str) -> List[BibEntry]:
     with open(bib_path, 'r') as bibtex_file:
         bib_database = bibtexparser.load(bibtex_file)
     return bib_database.entries
@@ -38,14 +46,29 @@ def fuzzy_title_match(title, titles):
     matches = difflib.get_close_matches(title.strip(), titles, n=1)
     return bool(matches)
 
-def is_retracted(entry, titles, dois) -> MATCH_TYPE | None:
-    title = entry.get('title', '').strip()
-    doi = entry.get('doi', '').strip()
+def is_retracted(entry: BibEntry, titles: Set[str], dois: Set[str]) -> Optional[MATCH_TYPE]:
+    try:
+        title = entry.get('title', '').strip()
+        doi = entry.get('doi', '').strip()
+    except Exception as e:
+        print(f"Invalid entry encountered: {entry}. Error: {e}")
+        return None
     if doi and doi in dois:
         return 'doi'
     if fuzzy_title_match(title, titles):
         return 'fuzzy'
     return None
+
+def check_entry(entry, titles=None, dois=None):
+    """
+    Standalone function to check a single bibtex entry dict for retraction status.
+    Downloads and builds lookup if titles/dois are not provided.
+    Returns 'doi', 'fuzzy', or None.
+    """
+    if titles is None or dois is None:
+        csv_rows = download_retraction_watch_csv()
+        titles, dois = build_retraction_lookup(csv_rows)
+    return is_retracted(entry, titles, dois)
 
 def check_bib_file(bib_path: str):
     entries = parse_bib_file(bib_path)
