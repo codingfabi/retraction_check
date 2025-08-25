@@ -1,5 +1,9 @@
 # retraction_check
 
+[![Tests](https://github.com/codingfabi/retraction_check/workflows/Tests/badge.svg)](https://github.com/codingfabi/retraction_check/actions/workflows/test.yml)
+[![Code Quality](https://github.com/codingfabi/retraction_check/workflows/Code%20Quality/badge.svg)](https://github.com/codingfabi/retraction_check/actions/workflows/code-quality.yml)
+[![Build](https://github.com/codingfabi/retraction_check/workflows/Build%20and%20Package/badge.svg)](https://github.com/codingfabi/retraction_check/actions/workflows/build.yml)
+
 A Python package to check whether papers in your .bib file or a specific bibtex entry have been listed on [Retraction Watch](https://retractionwatch.com/).
 
 ## Features
@@ -11,7 +15,12 @@ A Python package to check whether papers in your .bib file or a specific bibtex 
 ## Installation
 
 ```bash
-# Install dependencies
+# Install from PyPI (when published)
+pip install retraction-check
+
+# Or install from source
+git clone https://github.com/codingfabi/retraction_check.git
+cd retraction_check
 pipenv install
 
 # Install development dependencies
@@ -22,6 +31,10 @@ pipenv install --dev
 
 ### Command line
 ```bash
+# Using the installed command
+retraction-check yourfile.bib
+
+# Or using the module
 python -m retraction_check.check_bib yourfile.bib
 ```
 

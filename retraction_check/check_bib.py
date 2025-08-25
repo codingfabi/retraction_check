@@ -117,6 +117,13 @@ def check_bib_file(bib_path: str):
     if not matches['doi'] and not matches['fuzzy']:
         print("No retracted papers found.")
 
+def main():
+    """CLI entry point for the retraction-check command."""
+    if len(sys.argv) < 2:
+        print("Usage: retraction-check yourfile.bib")
+        sys.exit(1)
+    check_bib_file(sys.argv[1])
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python -m retraction_check.check_bib yourfile.bib")
