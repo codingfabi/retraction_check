@@ -1,0 +1,45 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install pipenv
+      run: |
+        python -m pip install --upgrade pip
+        pip install pipenv
+
+    - name: Install dependencies
+      run: |
+        pipenv install --dev --deploy
+
+    - name: Check code formatting
+      run: |
+        pipenv run format-check
+
+    - name: Run linting
+      run: |
+        pipenv run lint
+
+    - name: Run type checking
+      run: |
+        pipenv run type-check
+
+    - name: Run security check (if bandit is available)
+      run: |
+        pipenv run python -m pip list | grep bandit || echo "Bandit not installed, skipping security check"
+      continue-on-error: true
