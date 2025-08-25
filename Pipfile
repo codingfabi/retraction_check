@@ -8,6 +8,22 @@ bibtexparser = "*"
 requests = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+black = "*"
+flake8 = "*"
+mypy = "*"
 
 [requires]
 python_version = "3.12"
+
+[scripts]
+test = "pytest tests/ -v"
+test-cov = "pytest tests/ --cov=retraction_check --cov-report=html --cov-report=term"
+test-watch = "pytest tests/ -v --tb=short -x"
+lint = "flake8 retraction_check/ tests/"
+format = "black retraction_check/ tests/"
+format-check = "black --check retraction_check/ tests/"
+type-check = "mypy retraction_check/"
+check-all = "bash -c 'pipenv run format-check && pipenv run lint && pipenv run type-check && pipenv run test-cov'"
