@@ -84,3 +84,56 @@ pipenv run check-all
 - Python 3.8+
 - bibtexparser
 - requests
+
+## Example: Automated Retraction Check with GitHub Actions
+
+You can automate retraction checks for your bibliography file using GitHub Actions. The following workflow runs the check on demand, on a schedule, or on every commit to a specific branch. If any retractions are found, it will open a GitHub issue listing the findings.
+
+```yaml
+name: Retraction Check
+
+on:
+  workflow_dispatch:  # Allows manual trigger
+  schedule:
+    - cron: '0 8 * * 1'  # Runs every Monday at 08:00 UTC
+  push:
+    paths:
+      - yourfile.bib  # Change this to your personal bib file to make sure the workflow runs every time the bibfile changes
+
+jobs:
+  retraction_check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: Run retraction check
+        id: retraction
+        run: |
+          python -m retraction_check.check_bib path/to/your/bibfileyourfile.bib > findings.txt
+          grep -v "No retracted papers found." findings.txt > findings_only.txt || true
+
+      - name: Create issue if retractions found
+        if: success() && hashFiles('findings_only.txt') != ''
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Retraction Watch: Retracted Papers Detected in Bibliography"
+          content-filepath: findings_only.txt
+          labels: retraction, automated-check
+```
+
+- Replace `yourfile.bib` with the path to your bibliography file.
+- The workflow will create an issue only if retractions are found.
+- You can trigger the workflow manually, on a schedule, or on every commit to the specified branch.
