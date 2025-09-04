@@ -4,6 +4,9 @@ on:
   workflow_dispatch:  # Allows manual trigger
   schedule:
     - cron: '0 8 * * 1'  # Runs every Monday at 08:00 UTC
+  pull_request:
+    branches:
+      - feat/github-action
 
 jobs:
   retraction_check:
