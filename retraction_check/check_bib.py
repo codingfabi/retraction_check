@@ -5,6 +5,13 @@ import csv
 import io
 import difflib
 from typing import List, Literal, TypedDict, Set, Optional
+from dataclasses import dataclass
+
+@dataclass
+class RetractionCheckConfig:
+    fuzzy_cutoff: float = 0.6
+
+default_config = RetractionCheckConfig()
 
 RETRACTION_WATCH_CSV = (
     "https://gitlab.com/crossref/retraction-watch-data/-/raw/main/retraction_watch.csv"
@@ -90,15 +97,19 @@ def build_retraction_lookup(
     return titles, dois
 
 
-def fuzzy_title_match(title: str, titles: set[str]) -> bool:
+def fuzzy_title_match(
+    title: str, titles: set[str], config: RetractionCheckConfig = None
+) -> bool:
+    if config is None:
+        config = default_config
     if not title:
         return False
-    matches = difflib.get_close_matches(title.strip(), titles, n=1)
+    matches = difflib.get_close_matches(title.strip(), titles, n=1, cutoff=config.fuzzy_cutoff)
     return bool(matches)
 
 
 def is_retracted(
-    entry: BibEntry, titles: Set[str], dois: Set[str]
+    entry: BibEntry, titles: Set[str], dois: Set[str], config: RetractionCheckConfig = None
 ) -> Optional[MATCH_TYPE]:
     try:
         title = entry.get("title", "").strip()
@@ -108,7 +119,7 @@ def is_retracted(
         return None
     if doi and doi in dois:
         return "doi"
-    if fuzzy_title_match(title, titles):
+    if fuzzy_title_match(title, titles, config=config):
         return "fuzzy"
     return None
 
@@ -117,25 +128,23 @@ def check_entry(
     entry: BibEntry,
     titles: Optional[set[str]] = None,
     dois: Optional[set[str]] = None,
+    config: RetractionCheckConfig = None
 ) -> Optional[MATCH_TYPE]:
-    """
-    Standalone function to check a single bibtex entry dict for retraction status.
-    Downloads and builds lookup if titles/dois are not provided.
-    Returns 'doi', 'fuzzy', or None.
-    """
+    if config is None:
+        config = default_config
     if titles is None or dois is None:
         csv_rows = download_retraction_watch_csv()
         titles, dois = build_retraction_lookup(csv_rows)
-    return is_retracted(entry, titles, dois)
+    return is_retracted(entry, titles, dois, config=config)
 
 
-def check_bib_file(bib_path: str) -> None:
+def check_bib_file(bib_path: str, config: RetractionCheckConfig = None) -> None:
     entries = parse_bib_file(bib_path)
     csv_rows = download_retraction_watch_csv()
     titles, dois = build_retraction_lookup(csv_rows)
     matches: dict[str, list[str]] = {"doi": [], "fuzzy": []}
     for entry in entries:
-        match_type = is_retracted(entry, titles, dois)
+        match_type = is_retracted(entry, titles, dois, config)
         if match_type:
             matches[match_type].append(entry.get("title", "Unknown Title"))
     if matches["doi"]:

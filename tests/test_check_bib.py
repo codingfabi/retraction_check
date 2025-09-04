@@ -133,6 +133,19 @@ class TestFuzzyTitleMatch(unittest.TestCase):
         result = fuzzy_title_match("", titles)
         self.assertFalse(result)
 
+    def test_fuzzy_cutoff_config_respected(self):
+        # Assuming fuzzy_title_match now takes a config or cutoff argument
+        from retraction_check.check_bib import RetractionCheckConfig
+        titles = {"Test Paper Title"}
+        # With a high cutoff, similar titles should not match
+        config = RetractionCheckConfig(fuzzy_cutoff=0.95)
+        result = fuzzy_title_match("Test Pper Titl", titles, config=config)
+        self.assertFalse(result)
+        # With a low cutoff, similar titles should match
+        config = RetractionCheckConfig(fuzzy_cutoff=0.5)
+        result = fuzzy_title_match("Test Pper Titl", titles, config=config)
+        self.assertTrue(result)
+
 
 class TestIsRetracted(unittest.TestCase):
 
