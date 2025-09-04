@@ -5,8 +5,8 @@ on:
   schedule:
     - cron: '0 8 * * 1'  # Runs every Monday at 08:00 UTC
   push:
-    branches:
-      - feat/github-action
+    paths:
+      - sample.bib
 
 jobs:
   retraction_check:
