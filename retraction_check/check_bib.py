@@ -7,9 +7,11 @@ import difflib
 from typing import List, Literal, TypedDict, Set, Optional
 from dataclasses import dataclass
 
+
 @dataclass
 class RetractionCheckConfig:
     fuzzy_cutoff: float = 0.6
+
 
 default_config = RetractionCheckConfig()
 
@@ -98,18 +100,23 @@ def build_retraction_lookup(
 
 
 def fuzzy_title_match(
-    title: str, titles: set[str], config: RetractionCheckConfig = None
+    title: str, titles: set[str], config: Optional[RetractionCheckConfig] = None
 ) -> bool:
     if config is None:
         config = default_config
     if not title:
         return False
-    matches = difflib.get_close_matches(title.strip(), titles, n=1, cutoff=config.fuzzy_cutoff)
+    matches = difflib.get_close_matches(
+        title.strip(), titles, n=1, cutoff=config.fuzzy_cutoff
+    )
     return bool(matches)
 
 
 def is_retracted(
-    entry: BibEntry, titles: Set[str], dois: Set[str], config: RetractionCheckConfig = None
+    entry: BibEntry,
+    titles: Set[str],
+    dois: Set[str],
+    config: Optional[RetractionCheckConfig] = None,
 ) -> Optional[MATCH_TYPE]:
     try:
         title = entry.get("title", "").strip()
@@ -128,7 +135,7 @@ def check_entry(
     entry: BibEntry,
     titles: Optional[set[str]] = None,
     dois: Optional[set[str]] = None,
-    config: RetractionCheckConfig = None
+    config: Optional[RetractionCheckConfig] = None,
 ) -> Optional[MATCH_TYPE]:
     if config is None:
         config = default_config
@@ -138,7 +145,9 @@ def check_entry(
     return is_retracted(entry, titles, dois, config=config)
 
 
-def check_bib_file(bib_path: str, config: RetractionCheckConfig = None) -> None:
+def check_bib_file(
+    bib_path: str, config: Optional[RetractionCheckConfig] = None
+) -> None:
     entries = parse_bib_file(bib_path)
     csv_rows = download_retraction_watch_csv()
     titles, dois = build_retraction_lookup(csv_rows)
