@@ -137,3 +137,38 @@ jobs:
 - Replace `yourfile.bib` with the path to your bibliography file.
 - The workflow will create an issue only if retractions are found.
 - You can trigger the workflow manually, on a schedule, or on every commit to the specified branch.
+
+## Example: Automated Retraction Check with GitLab CI
+
+You can also automate retraction checks for your bibliography file using GitLab CI/CD. The following example runs the check on every push to the default branch and creates an issue if retractions are found (requires a GitLab personal access token with API scope stored as `GITLAB_TOKEN`).
+
+```yaml
+retraction_check:
+  image: python:3.11
+  stage: test
+  script:
+    - pip install .
+    - python -m retraction_check.check_bib path/to/yourfile.bib > findings.txt
+    - grep -v "No retracted papers found." findings.txt > findings_only.txt || true
+    # Only create an issue if findings_only.txt is not empty
+    - |
+      if [ -s findings_only.txt ]; then
+        curl --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+             --header "Content-Type: application/json" \
+             --data '{
+               "title": "Retraction Watch: Retracted Papers Detected in Bibliography",
+               "description": "$(cat findings_only.txt)",
+               "labels": "retraction, automated-check"
+             }' \
+             --request POST "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/issues"
+      fi
+  only:
+    - main  # or your default branch
+  rules:
+    - changes:
+        - path/to/yourfile.bib
+```
+
+- Replace `path/to/yourfile.bib` with the path to your bibliography file.
+- Store a GitLab personal access token with API scope as a CI/CD variable named `GITLAB_TOKEN`.
+- The job will create an issue only if retractions are found and the `.bib` file changes.
